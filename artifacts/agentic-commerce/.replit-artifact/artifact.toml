@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Agentic Commerce Platform"
+description = "A high-performance commerce storefront designed for human shoppers and autonomous shopping agents, with conversational product discovery and structured commerce APIs."
+version = "1.0.0"
+id = "artifacts/agentic-commerce"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21508
+
+[services.development]
+run = "pnpm --filter @workspace/agentic-commerce run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/agentic-commerce", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/agentic-commerce/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21508"
+BASE_PATH = "/"

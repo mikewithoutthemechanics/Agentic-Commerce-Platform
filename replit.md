@@ -1,6 +1,6 @@
-# [Project name]
+# Agentic Commerce Platform
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+An opinionated storefront that serves both human buyers and autonomous shopping agents.
 
 ## Run & Operate
 
@@ -22,15 +22,21 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/agentic-commerce/` — user-facing storefront artifact
+- `supabase/migrations/` — Supabase schema migrations
+- `docs/nextjs-package.json` — planned Next.js dependency contract from the architecture brief
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The catalog stores agent-readable specifications in JSONB and exposes a materialized UCP/Schema.org projection.
+- Orders allow either an authenticated human user or a nullable machine `agent_id`.
+- The current review slice stops before API routes, payment setup, and agent protocol handlers.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Conversational product discovery for human shoppers
+- Inventory and trend-aware catalog presentation
+- Structured catalog and checkout surfaces for autonomous agents
 
 ## User preferences
 
