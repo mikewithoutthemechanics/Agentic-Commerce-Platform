@@ -10,6 +10,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: catalog
+    description: Human and agent catalog operations
+  - name: checkout
+    description: Human and agent checkout operations
 paths:
   /healthz:
     get:
@@ -24,6 +28,133 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /products:
+    get:
+      operationId: listProducts
+      tags: [catalog]
+      summary: List products
+      description: Returns catalog products for storefront and agent discovery.
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: availableOnly
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: true
+      responses:
+        "200":
+          description: Product catalog
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+  /products/{id}/inventory:
+    get:
+      operationId: getLiveInventory
+      tags: [catalog]
+      summary: Get live inventory
+      description: Returns current inventory for a product.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Inventory status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryStatus"
+        "404":
+          description: Product not found
+  /delivery-estimates:
+    get:
+      operationId: getEstimatedDeliveryDates
+      tags: [catalog]
+      summary: Get estimated delivery dates
+      description: Returns a delivery estimate for an available product and destination.
+      parameters:
+        - name: productId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: postalCode
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 20
+      responses:
+        "200":
+          description: Delivery estimate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryEstimate"
+        "404":
+          description: Product not found
+  /compatibility/verify:
+    post:
+      operationId: verifyCompatibilitySpecs
+      tags: [catalog]
+      summary: Verify compatibility specifications
+      description: Compares requested requirements against a product's structured specifications.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompatibilityCheckInput"
+      responses:
+        "200":
+          description: Compatibility result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompatibilityResult"
+        "404":
+          description: Product not found
+  /checkout:
+    post:
+      operationId: createCheckout
+      tags: [checkout]
+      summary: Create a human or agent checkout
+      description: Branches into PayFast human checkout or headless agent-token checkout.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutInput"
+      responses:
+        "201":
+          description: Checkout created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutResponse"
+        "400":
+          description: Invalid checkout request
+        "503":
+          description: Payment provider is not configured
 components:
   schemas:
     HealthStatus:
@@ -33,4 +164,160 @@ components:
           type: string
       required:
         - status
+    Product:
+      type: object
+      required:
+        - id
+        - title
+        - detailedSpecs
+        - inventoryCount
+        - humanPrice
+        - agentTokenizedPrice
+        - trendScore
+      properties:
+        id:
+          type: string
+          format: uuid
+        gtin:
+          type: ["string", "null"]
+        title:
+          type: string
+        detailedSpecs:
+          type: object
+          additionalProperties: true
+        inventoryCount:
+          type: integer
+          minimum: 0
+        humanPrice:
+          type: number
+          minimum: 0
+        agentTokenizedPrice:
+          type: number
+          minimum: 0
+        trendScore:
+          type: number
+          minimum: 0
+          maximum: 100
+    InventoryStatus:
+      type: object
+      required:
+        - productId
+        - inventoryCount
+        - available
+      properties:
+        productId:
+          type: string
+          format: uuid
+        inventoryCount:
+          type: integer
+          minimum: 0
+        available:
+          type: boolean
+    DeliveryEstimate:
+      type: object
+      required:
+        - productId
+        - postalCode
+        - estimatedFrom
+        - estimatedTo
+      properties:
+        productId:
+          type: string
+          format: uuid
+        postalCode:
+          type: string
+        estimatedFrom:
+          type: string
+          format: date
+        estimatedTo:
+          type: string
+          format: date
+    CompatibilityCheckInput:
+      type: object
+      required:
+        - productId
+        - requirements
+      properties:
+        productId:
+          type: string
+          format: uuid
+        requirements:
+          type: object
+          additionalProperties:
+            type: string
+    CompatibilityResult:
+      type: object
+      required:
+        - productId
+        - compatible
+        - matches
+        - mismatches
+      properties:
+        productId:
+          type: string
+          format: uuid
+        compatible:
+          type: boolean
+        matches:
+          type: array
+          items:
+            type: string
+        mismatches:
+          type: array
+          items:
+            type: string
+    CheckoutItem:
+      type: object
+      required:
+        - productId
+        - quantity
+      properties:
+        productId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          minimum: 1
+    CheckoutInput:
+      type: object
+      required:
+        - consumer
+        - items
+      properties:
+        consumer:
+          type: string
+          enum: [human, agent]
+        userId:
+          type: ["string", "null"]
+        agentId:
+          type: ["string", "null"]
+        paymentToken:
+          type: ["string", "null"]
+        items:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/CheckoutItem"
+    CheckoutResponse:
+      type: object
+      required:
+        - orderId
+        - consumer
+        - status
+        - paymentGateway
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        consumer:
+          type: string
+          enum: [human, agent]
+        status:
+          type: string
+          enum: [payment_pending, paid]
+        paymentGateway:
+          type: string
+          enum: [payfast, agent_api]
+        redirectUrl:
+          type: ["string", "null"]
 

@@ -1,0 +1,2 @@
+- [API codegen and Zod](api-codegen-zod.md) — keep Orval-generated validators and the installed Zod runtime on the same major version.
+- [Payment provider boundary](payment-provider-boundary.md) — never silently substitute a requested payment provider that is unavailable.

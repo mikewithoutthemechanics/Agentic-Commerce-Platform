@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface InventoryStatus {
+  productId: string;
+  /** @minimum 0 */
+  inventoryCount: number;
+  available: boolean;
 }
